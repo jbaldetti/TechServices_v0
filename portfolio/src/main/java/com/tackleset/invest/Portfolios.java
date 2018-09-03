@@ -157,27 +157,19 @@ public class Portfolios {
                     (Math.abs(bigDecimalMax.getValue().floatValue()) > Math.abs(bigDecimalMin.getValue().floatValue())) ?
                             true : false;
 
-            if (posBigger) {
-                BigDecimal adjustment = bigDecimalMax.getValue().add(bigDecimalMin.getValue());
-                Map<Integer, BigDecimal> map1 = new LinkedHashMap<>();
-                map1.put(bigDecimalMin.getKey(), bigDecimalMin.getValue());
-                transactions.add(map1);
-                Map<Integer, BigDecimal> map2 = new LinkedHashMap<>();
-                map2.put(bigDecimalMax.getKey(), bigDecimalMin.getValue().multiply(BigDecimal.valueOf(-1)));
-                transactions.add(map2);
-                deltas.remove(bigDecimalMin.getKey());
-                deltas.put(bigDecimalMax.getKey(), adjustment);
-            } else {
-                BigDecimal adjustment = bigDecimalMin.getValue().add(bigDecimalMax.getValue());
-                Map<Integer, BigDecimal> map1 = new LinkedHashMap<>();
-                map1.put(bigDecimalMax.getKey(), bigDecimalMax.getValue());
-                transactions.add(map1);
-                Map<Integer, BigDecimal> map2 = new LinkedHashMap<>();
-                map2.put(bigDecimalMin.getKey(), bigDecimalMax.getValue().multiply(BigDecimal.valueOf(-1)));
-                transactions.add(map2);
-                deltas.remove(bigDecimalMax.getKey());
-                deltas.put(bigDecimalMin.getKey(), adjustment);
-            }
+            Map.Entry<Integer, BigDecimal> source = (posBigger) ? bigDecimalMax : bigDecimalMin;
+            Map.Entry<Integer, BigDecimal> target = (posBigger) ? bigDecimalMin : bigDecimalMax;
+
+            BigDecimal adjustment = source.getValue().add(target.getValue());
+            Map<Integer, BigDecimal> map1 = new LinkedHashMap<>();
+            map1.put(target.getKey(), target.getValue());
+            transactions.add(map1);
+            Map<Integer, BigDecimal> map2 = new LinkedHashMap<>();
+            map2.put(source.getKey(), target.getValue().multiply(BigDecimal.valueOf(-1)));
+            transactions.add(map2);
+            deltas.remove(target.getKey());
+            deltas.put(source.getKey(), adjustment);
+
             sum = deltas.values().stream().mapToDouble(bd -> Math.abs(bd.floatValue())).sum();
         }
     }
