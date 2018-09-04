@@ -2,10 +2,10 @@
 
 There are two maven projects in this folder.  
 
-# Masker
+# Project 1: Masker
 The first project is masker.  It is a Java main program with system out to stdout.  It is just an example of how one can might mask/obfuscate sensitive data.
 
-# Portfolio
+# Project 2: Portfolio
 The second project is portfolio. It requires JRE 1.8.
 
 It is a backend Jetty REST web services project for a financial advisor.
