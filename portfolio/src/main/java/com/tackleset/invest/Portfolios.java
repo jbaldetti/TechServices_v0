@@ -1,6 +1,7 @@
 package com.tackleset.invest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -16,6 +17,8 @@ import java.util.*;
 @Path("/invest")
 public class Portfolios {
 
+    public static final int MAX_LENGTH = 20;
+    public static final String DEFAULT_ZERO_STR = "0";
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final List<Object> portfolios;
 
@@ -44,16 +47,11 @@ public class Portfolios {
     @GET
     @Path("portfolios")
     @Produces(MediaType.APPLICATION_JSON)
-    public String getRiskLevelPortfolio(@QueryParam("riskLevel") int level) {
+    public String getRiskLevelPortfolio(@QueryParam("riskLevel") int level) throws IOException {
         if (level < 1 || level > portfolios.size()) {
             throw new NotFoundException();
         }
-        try {
-            return objectMapper.writeValueAsString(portfolios.get(level - 1)) + "\n";
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new NotFoundException();
-        }
+        return objectMapper.writeValueAsString(portfolios.get(level - 1)) + "\n";
     }
 
     /**
@@ -62,75 +60,95 @@ public class Portfolios {
      * Given dollar amounts for provided investment asses and risk level, provides a minimal set of transactions to
      * reach portfolio percentage levels for
      *
-     * @param level        risk level where 1 is low risk and numbers above are higher risk
-     * @param bondAmt      bond dollar amount
-     * @param largeCapAmt  large cap dollar amount
-     * @param midCapAmt    mid cap dollar amount
-     * @param foreignAmt   foreign dollar amount
-     * @param smallCapAmt  small cap dollar amount
+     * Assumes if the total amount is less than a dollar then the transactional cost is not worth dividing amounts and
+     * returns NotFoundException
+     *
+     * @param level           risk level where 1 is low risk and numbers above are higher risk
+     * @param bondAmtStr      bond dollar amount
+     * @param largeCapAmtStr  large cap dollar amount
+     * @param midCapAmtStr    mid cap dollar amount
+     * @param foreignAmtStr   foreign dollar amount
+     * @param smallCapAmtStr  small cap dollar amount
      * @return  List of transactions to balance portfolio to risk level
      */
     @GET
     @Path("adjustments")
     @Produces(MediaType.APPLICATION_JSON)
     public String getAdjustments(@QueryParam("riskLevel") int level,
-                                 @QueryParam("bondAmt") double bondAmt,
-                                 @QueryParam("largeCapAmt") double largeCapAmt,
-                                 @QueryParam("midCapAmt") double midCapAmt,
-                                 @QueryParam("foreignAmt") double foreignAmt,
-                                 @QueryParam("smallCapAmt") double smallCapAmt) {
+                                 @QueryParam("bondAmt") String bondAmtStr,
+                                 @QueryParam("largeCapAmt") String largeCapAmtStr,
+                                 @QueryParam("midCapAmt") String midCapAmtStr,
+                                 @QueryParam("foreignAmt") String foreignAmtStr,
+                                 @QueryParam("smallCapAmt") String smallCapAmtStr) {
         if (level < 1 || level > portfolios.size()) {
             throw new NotFoundException();
         }
-        Map<String, Integer> portfolio = (Map<String, Integer>) portfolios.get(level - 1);
-        BigDecimal bdBondAmt = BigDecimal.valueOf(bondAmt);
-        BigDecimal bdLargeCapAmt = BigDecimal.valueOf(largeCapAmt);
-        BigDecimal bdMidCapAmt = BigDecimal.valueOf(midCapAmt);
-        BigDecimal bdForeignAmt = BigDecimal.valueOf(foreignAmt);
-        BigDecimal bdSmallCapAmt = BigDecimal.valueOf(smallCapAmt);
-        BigDecimal totalAmount = BigDecimal.ZERO.add(bdBondAmt)
-                .add(bdLargeCapAmt)
-                .add(bdMidCapAmt)
-                .add(bdForeignAmt)
-                .add(bdSmallCapAmt).setScale(2, RoundingMode.HALF_UP);
-        if (totalAmount != BigDecimal.ZERO) {
-            Map<Integer, BigDecimal> deltas = new LinkedHashMap<>();
-            BigDecimal bondAdj = BigDecimal.valueOf(portfolio.get("bonds_pct")).multiply(totalAmount)
-                    .divide(BigDecimal.valueOf(100)).subtract(bdBondAmt).setScale(2, RoundingMode.HALF_UP);
-            deltas.put(0, bondAdj);
-            BigDecimal bigCapAdj = BigDecimal.valueOf(portfolio.get("large_cap_pct")).multiply(totalAmount)
-                    .divide(BigDecimal.valueOf(100)).subtract(bdLargeCapAmt).setScale(2, RoundingMode.HALF_UP);
-            deltas.put(1, bigCapAdj);
-            BigDecimal midCapAdj = BigDecimal.valueOf(portfolio.get("mid_cap_pct")).multiply(totalAmount)
-                    .divide(BigDecimal.valueOf(100)).subtract(bdMidCapAmt).setScale(2, RoundingMode.HALF_UP);
-            deltas.put(2, midCapAdj);
-            BigDecimal foreignCapAdj = BigDecimal.valueOf(portfolio.get("foreign_pct")).multiply(totalAmount)
-                    .divide(BigDecimal.valueOf(100)).subtract(bdForeignAmt).setScale(2, RoundingMode.HALF_UP);
-            deltas.put(3, foreignCapAdj);
-            BigDecimal smallCapAdj = totalAmount.subtract(bdBondAmt).subtract(bondAdj)
-                    .subtract(bdLargeCapAmt).subtract(bigCapAdj).subtract(bdMidCapAmt)
-                    .subtract(midCapAdj).subtract(bdForeignAmt).subtract(foreignCapAdj)
-                    .subtract(bdSmallCapAmt).setScale(2, RoundingMode.HALF_UP);
-            deltas.put(4, smallCapAdj);
+        bondAmtStr = StringUtils.defaultIfBlank(bondAmtStr, DEFAULT_ZERO_STR);
+        largeCapAmtStr = StringUtils.defaultIfBlank(largeCapAmtStr, DEFAULT_ZERO_STR);
+        midCapAmtStr = StringUtils.defaultIfBlank(midCapAmtStr, DEFAULT_ZERO_STR);
+        foreignAmtStr = StringUtils.defaultIfBlank(foreignAmtStr, DEFAULT_ZERO_STR);
+        smallCapAmtStr = StringUtils.defaultIfBlank(smallCapAmtStr, DEFAULT_ZERO_STR);
 
-            List<Map<Integer, BigDecimal>> transactions = getCancellingOutTransactions(deltas);
-            // remove the cancelling out transactions from the delta list
-            for (Map<Integer, BigDecimal> mapI : transactions) {
-                for (Integer Int : mapI.keySet()) {
-                    deltas.remove(Int.intValue());
-                }
+        Map<String, Integer> portfolio = (Map<String, Integer>) portfolios.get(level - 1);
+        try {
+            if (bondAmtStr.length() > MAX_LENGTH || largeCapAmtStr.length() > MAX_LENGTH || midCapAmtStr.length() > MAX_LENGTH ||
+                    foreignAmtStr.length() > MAX_LENGTH || smallCapAmtStr.length() > MAX_LENGTH) {
+                throw new BadRequestException(String.format("Dollar amount(s) exceeds length %d", MAX_LENGTH));
             }
-            offsetMaxMinPortfolioDeltas(deltas, transactions);
-            try {
+            double bondAmt = Double.valueOf(bondAmtStr);
+            double largeCapAmt = Double.valueOf(largeCapAmtStr);
+            double midCapAmt = Double.valueOf(midCapAmtStr);
+            double foreignAmt = Double.valueOf(foreignAmtStr);
+            double smallCapAmt = Double.valueOf(smallCapAmtStr);
+            BigDecimal bdBondAmt = BigDecimal.valueOf(bondAmt);
+            BigDecimal bdLargeCapAmt = BigDecimal.valueOf(largeCapAmt);
+            BigDecimal bdMidCapAmt = BigDecimal.valueOf(midCapAmt);
+            BigDecimal bdForeignAmt = BigDecimal.valueOf(foreignAmt);
+            BigDecimal bdSmallCapAmt = BigDecimal.valueOf(smallCapAmt);
+            BigDecimal totalAmount = BigDecimal.ZERO.add(bdBondAmt)
+                    .add(bdLargeCapAmt)
+                    .add(bdMidCapAmt)
+                    .add(bdForeignAmt)
+                    .add(bdSmallCapAmt).setScale(2, RoundingMode.HALF_UP);
+            if (totalAmount.doubleValue() >= 1) {
+                Map<Integer, BigDecimal> deltas = new LinkedHashMap<>();
+                BigDecimal bondAdj = BigDecimal.valueOf(portfolio.get("bonds_pct")).multiply(totalAmount)
+                        .divide(BigDecimal.valueOf(100)).subtract(bdBondAmt).setScale(2, RoundingMode.HALF_UP);
+                deltas.put(0, bondAdj);
+                BigDecimal bigCapAdj = BigDecimal.valueOf(portfolio.get("large_cap_pct")).multiply(totalAmount)
+                        .divide(BigDecimal.valueOf(100)).subtract(bdLargeCapAmt).setScale(2, RoundingMode.HALF_UP);
+                deltas.put(1, bigCapAdj);
+                BigDecimal midCapAdj = BigDecimal.valueOf(portfolio.get("mid_cap_pct")).multiply(totalAmount)
+                        .divide(BigDecimal.valueOf(100)).subtract(bdMidCapAmt).setScale(2, RoundingMode.HALF_UP);
+                deltas.put(2, midCapAdj);
+                BigDecimal foreignCapAdj = BigDecimal.valueOf(portfolio.get("foreign_pct")).multiply(totalAmount)
+                        .divide(BigDecimal.valueOf(100)).subtract(bdForeignAmt).setScale(2, RoundingMode.HALF_UP);
+                deltas.put(3, foreignCapAdj);
+                BigDecimal smallCapAdj = totalAmount.subtract(bdBondAmt).subtract(bondAdj)
+                        .subtract(bdLargeCapAmt).subtract(bigCapAdj).subtract(bdMidCapAmt)
+                        .subtract(midCapAdj).subtract(bdForeignAmt).subtract(foreignCapAdj)
+                        .subtract(bdSmallCapAmt).setScale(2, RoundingMode.HALF_UP);
+                deltas.put(4, smallCapAdj);
+
+                List<Map<Integer, BigDecimal>> transactions = getCancellingOutTransactions(deltas);
+                // remove the cancelling out transactions from the delta list
+                for (Map<Integer, BigDecimal> mapI : transactions) {
+                    for (Integer Int : mapI.keySet()) {
+                        deltas.remove(Int.intValue());
+                    }
+                }
+                offsetMaxMinPortfolioDeltas(deltas, transactions);
                 return objectMapper.writeValueAsString(transactions + "\n");
-            } catch (IOException e) {
-                e.printStackTrace();
+            } else {
                 throw new NotFoundException();
             }
-        } else {
-            throw new NotFoundException();
+        } catch (NumberFormatException nfe) {
+            throw new BadRequestException();
+        } catch (WebApplicationException wae) {
+            throw wae;
+        } catch (Throwable t) {
+            throw new BadRequestException();
         }
-
     }
 
     /**
