@@ -1,0 +1,13 @@
+{
+    "risk_levels": [{ "level": 1, "bonds_pct": 80, "large_cap_pct": 20, "mid_cap_pct": 0, "foreign_pct": 0, "small_cap_pct": 0 },
+        { "level": 2, "bonds_pct": 70, "large_cap_pct": 15, "mid_cap_pct": 15, "foreign_pct": 0, "small_cap_pct": 0 },
+        { "level": 3, "bonds_pct": 60, "large_cap_pct": 15, "mid_cap_pct": 15, "foreign_pct": 10, "small_cap_pct": 0 },
+        { "level": 4, "bonds_pct": 50, "large_cap_pct": 20, "mid_cap_pct": 20, "foreign_pct": 10, "small_cap_pct": 0 },
+        { "level": 5, "bonds_pct": 40, "large_cap_pct": 20, "mid_cap_pct": 20, "foreign_pct": 20, "small_cap_pct": 0 },
+        { "level": 6, "bonds_pct": 35, "large_cap_pct": 25, "mid_cap_pct": 5, "foreign_pct": 30, "small_cap_pct": 5 },
+        { "level": 7, "bonds_pct": 20, "large_cap_pct": 25, "mid_cap_pct": 25, "foreign_pct": 25, "small_cap_pct": 5 },
+        { "level": 8, "bonds_pct": 10, "large_cap_pct": 20, "mid_cap_pct": 40, "foreign_pct": 20, "small_cap_pct": 10 },
+        { "level": 9, "bonds_pct": 5, "large_cap_pct": 15, "mid_cap_pct": 40, "foreign_pct": 25, "small_cap_pct": 15 },
+        { "level": 10, "bonds_pct": 0, "large_cap_pct": 5, "mid_cap_pct": 25, "foreign_pct": 30, "small_cap_pct": 40 }
+    ]
+}
