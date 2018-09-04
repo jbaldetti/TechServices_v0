@@ -1,12 +1,12 @@
 # TechServices_v0
-Technology Services Beta
 
 There are two maven projects in this folder.  
 
-The first one is masker.  It is a Java main program with system out to stdout.  It is just an example of how one can might mask/obfuscate sensitive data.
+# H2 Masker
+The first project is masker.  It is a Java main program with system out to stdout.  It is just an example of how one can might mask/obfuscate sensitive data.
 
-
-The second one is portfolio. It requires JRE 1.8.
+# H1 Portfolio
+The second project is portfolio. It requires JRE 1.8.
 
 It is a backend Jetty REST web services project for a financial advisor.
 
