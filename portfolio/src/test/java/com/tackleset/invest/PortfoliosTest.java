@@ -1,11 +1,14 @@
 package com.tackleset.invest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import junit.framework.TestCase;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,14 +36,14 @@ public class PortfoliosTest extends TestCase {
                     assertTrue("Map is expected size", riskMap.size() == 6);
                     assertTrue("Risk level matches", riskMap.get("level") == Integer.valueOf(i));
                 } catch (IOException e) {
-                    assertFalse(e.getMessage(), false);
                     e.printStackTrace();
+                    assertFalse(e.getMessage(), true);
                 }
             } catch (NotFoundException nfe) {
                 if (i == 0 || i == 11) {
                     assertTrue("Valid Not Found Exception", true);
                 } else {
-                    assertFalse("Invalid Not Found Exception", false);
+                    assertFalse("Invalid Not Found Exception", true);
                 }
             }
         }
@@ -51,7 +54,7 @@ public class PortfoliosTest extends TestCase {
      *
      * test cancelling out transactions that are neither max/min deltas
      */
-    public void testGetAdjustmentsWithCancellingOut() throws IOException {
+    public void testGetAdjustmentsWithCancellingOut() {
         try {
             int level = 7;
             String bondAmt = "8";
@@ -59,19 +62,23 @@ public class PortfoliosTest extends TestCase {
             String midCapAmt = "14";
             String foreignAmt = "36";
             String smallCapAmt = "9";
+            List<Map<String, Double>> expected = Arrays.asList(ImmutableMap.of("2", 11.0),
+                    ImmutableMap.of("3", -11.0), ImmutableMap.of("1", -8.0),
+                    ImmutableMap.of("0", 8.0), ImmutableMap.of("0", 4.0),
+                    ImmutableMap.of("4", -4.0));
             String json = portfolios.getAdjustments(level, bondAmt, largeCapAmt, midCapAmt, foreignAmt, smallCapAmt);
             try {
-               String transactionAdjustments = objectMapper.readValue(
-                        json, String.class);
+               List<Object> transactionAdjustments = objectMapper.readValue(
+                        json, List.class);
                 assertTrue("Transactions as expected",
-                        transactionAdjustments.equalsIgnoreCase("[{2=11.0}, {3=-11.0}, {1=-8.00}, {0=8.00}, {0=4.00}, {4=-4.00}]\n"));
+                        transactionAdjustments.equals(expected));
 
             } catch (IOException e) {
-                assertFalse(e.getMessage(), false);
                 e.printStackTrace();
+                assertFalse(e.getMessage(), true);
             }
         } catch (NotFoundException nfe) {
-            assertFalse("Invalid Not Found Exception", false);
+            assertFalse("Invalid Not Found Exception", true);
         }
     }
 
@@ -80,7 +87,7 @@ public class PortfoliosTest extends TestCase {
      *
      * test not cancelling out transactions using larger numbers
      */
-    public void testGetAdjustmentsWithLargerNumbers() throws IOException {
+    public void testGetAdjustmentsWithLargerNumbers() {
         try {
             int level = 7;
             String bondAmt = "48";
@@ -88,19 +95,23 @@ public class PortfoliosTest extends TestCase {
             String midCapAmt = "144";
             String foreignAmt = "326";
             String smallCapAmt = "19";
+            List<Map<String, Double>> expected = Arrays.asList(ImmutableMap.of("0", 130.0),
+                    ImmutableMap.of("1", -130.0), ImmutableMap.of("2", 78.50),
+                    ImmutableMap.of("3", -78.50), ImmutableMap.of("3", -25.0),
+                    ImmutableMap.of("4", 25.0), ImmutableMap.of("4", 0.50),
+                    ImmutableMap.of("1", -.50));
             String json = portfolios.getAdjustments(level, bondAmt, largeCapAmt, midCapAmt, foreignAmt, smallCapAmt);
             try {
-                String transactionAdjustments = objectMapper.readValue(
-                        json, String.class);
+                List<Object> transactionAdjustments = objectMapper.readValue(
+                        json, List.class);
                 assertTrue("Transactions as expected",
-                        transactionAdjustments.equalsIgnoreCase("[{0=130.00}, {1=-130.00}, {2=78.50}, {3=-78.50}, {3=-25.00}, {4=25.00}, {4=0.50}, {1=-0.50}]\n"));
-
+                        transactionAdjustments.equals(expected));
             } catch (IOException e) {
-                assertFalse(e.getMessage(), false);
                 e.printStackTrace();
+                assertFalse(e.getMessage(), true);
             }
         } catch (NotFoundException nfe) {
-            assertFalse("Invalid Not Found Exception", false);
+            assertFalse("Invalid Not Found Exception", true);
         }
     }
 
@@ -110,7 +121,7 @@ public class PortfoliosTest extends TestCase {
      *
      * test not cancelling out transactions using larger numbers and decimals to verify rounding
      */
-    public void testGetAdjustmentsWithLargerNumbersWithDecimals() throws IOException {
+    public void testGetAdjustmentsWithLargerNumbersWithDecimals() {
         try {
             int level = 7;
             String bondAmt = "48.56";
@@ -118,19 +129,24 @@ public class PortfoliosTest extends TestCase {
             String midCapAmt = "144.56";
             String foreignAmt = "326.11";
             String smallCapAmt = "19.33";
+            List<Map<String, Double>> expected = Arrays.asList(ImmutableMap.of("1", 107.84),
+                    ImmutableMap.of("3", -107.84), ImmutableMap.of("0", 66.30),
+                    ImmutableMap.of("3", -66.30), ImmutableMap.of("3", -8.40),
+                    ImmutableMap.of("4", 8.40), ImmutableMap.of("4", 0.99),
+                    ImmutableMap.of("2", -.99));
             String json = portfolios.getAdjustments(level, bondAmt, largeCapAmt, midCapAmt, foreignAmt, smallCapAmt);
             try {
-                String transactionAdjustments = objectMapper.readValue(
-                        json, String.class);
+                List<Object> transactionAdjustments = objectMapper.readValue(
+                        json, List.class);
                 assertTrue("Transactions as expected",
-                        transactionAdjustments.equalsIgnoreCase("[{1=107.84}, {3=-107.84}, {0=66.30}, {3=-66.30}, {3=-8.40}, {4=8.40}, {4=0.99}, {2=-0.99}]\n"));
+                        transactionAdjustments.equals(expected));
 
             } catch (IOException e) {
-                assertFalse(e.getMessage(), false);
                 e.printStackTrace();
+                assertFalse(e.getMessage(), true);
             }
         } catch (NotFoundException nfe) {
-            assertFalse("Invalid Not Found Exception", false);
+            assertFalse("Invalid Not Found Exception", true);
         }
     }
 
@@ -140,7 +156,7 @@ public class PortfoliosTest extends TestCase {
      * <p>
      * test not cancelling out transactions using larger numbers and decimals to verify rounding, having a negative amt
      */
-    public void testGetAdjustmentsWithLargerNumbersWithDecimalsNegatives() throws IOException {
+    public void testGetAdjustmentsWithLargerNumbersWithDecimalsNegatives() {
         try {
             int level = 7;
             String bondAmt = "48.56";
@@ -148,19 +164,24 @@ public class PortfoliosTest extends TestCase {
             String midCapAmt = "144.56";
             String foreignAmt = "326.11";
             String smallCapAmt = "-1.45";
+            List<Map<String, Double>> expected = Arrays.asList(ImmutableMap.of("1", 102.65),
+                    ImmutableMap.of("3", -102.65), ImmutableMap.of("0", 62.14),
+                    ImmutableMap.of("3", -62.14), ImmutableMap.of("3", -22.94),
+                    ImmutableMap.of("4", 22.94), ImmutableMap.of("4", 6.18),
+                    ImmutableMap.of("2", -6.18));
             String json = portfolios.getAdjustments(level, bondAmt, largeCapAmt, midCapAmt, foreignAmt, smallCapAmt);
             try {
-                String transactionAdjustments = objectMapper.readValue(
-                        json, String.class);
+                List<Object> transactionAdjustments = objectMapper.readValue(
+                        json, List.class);
                 assertTrue("Transactions as expected",
-                        transactionAdjustments.equalsIgnoreCase("[{1=102.65}, {3=-102.65}, {0=62.14}, {3=-62.14}, {3=-22.94}, {4=22.94}, {4=6.18}, {2=-6.18}]\n"));
+                        transactionAdjustments.equals(expected));
 
             } catch (IOException e) {
-                assertFalse(e.getMessage(), false);
                 e.printStackTrace();
+                assertFalse(e.getMessage(), true);
             }
         } catch (NotFoundException nfe) {
-            assertFalse("Invalid Not Found Exception", false);
+            assertFalse("Invalid Not Found Exception", true);
         }
     }
 
@@ -169,7 +190,7 @@ public class PortfoliosTest extends TestCase {
      *
      * all zero dollar amounts returns not found exception
      */
-    public void testGetAdjustmentsAllZeroDollars() throws IOException {
+    public void testGetAdjustmentsAllZeroDollars() {
         try {
             int level = 1;
             String bondAmt = "0";
@@ -188,7 +209,7 @@ public class PortfoliosTest extends TestCase {
      *
      * total amount is negative dollar returns not found exception
      */
-    public void testGetAdjustmentsTotalNegative() throws IOException {
+    public void testGetAdjustmentsTotalNegative() {
         try {
             int level = 3;
             String bondAmt = "0";
@@ -207,7 +228,7 @@ public class PortfoliosTest extends TestCase {
      *
      * total amount is less than 1 and returns not found exception
      */
-    public void testGetAdjustmentsTotalLessThan1() throws IOException {
+    public void testGetAdjustmentsTotalLessThan1() {
         try {
             int level = 6;
             String bondAmt = "0.004";
@@ -226,7 +247,7 @@ public class PortfoliosTest extends TestCase {
      *
      * use an amount that cannot be converted
      */
-    public void testGetAdjustmentsBadNumber() throws IOException {
+    public void testGetAdjustmentsBadNumber() {
         try {
             int level = 6;
             String bondAmt = "20,000.004";
@@ -245,7 +266,7 @@ public class PortfoliosTest extends TestCase {
      *
      * an amount is bigger than the max length
      */
-    public void testGetAdjustmentsTooBigNumber() throws IOException {
+    public void testGetAdjustmentsTooBigNumber() {
         try {
             int level = 6;
             String bondAmt = "208872378974389798264492.004";
@@ -263,29 +284,34 @@ public class PortfoliosTest extends TestCase {
     /**
      * testGetAdjustmentsNullNumber
      *
-     * an amount that is null
+     * an amount that is null, empty, blank
      */
-    public void testGetAdjustmentsNullNumber() throws IOException {
+    public void testGetAdjustmentsNullNumber() {
         try {
             int level = 7;
             String bondAmt = "8";
             String largeCapAmt = "33";
-            String midCapAmt = "14";
-            String foreignAmt = "36";
+            String midCapAmt = "";
+            String foreignAmt = "  ";
             String smallCapAmt = null;
+            List<Map<String, Double>> expected = Arrays.asList(ImmutableMap.of("2", 10.25),
+                    ImmutableMap.of("1", -10.25), ImmutableMap.of("3", 10.25),
+                    ImmutableMap.of("1", -10.25), ImmutableMap.of("4", 2.05),
+                    ImmutableMap.of("1", -2.05), ImmutableMap.of("0", 0.20),
+                    ImmutableMap.of("1", -0.20));
             String json = portfolios.getAdjustments(level, bondAmt, largeCapAmt, midCapAmt, foreignAmt, smallCapAmt);
             try {
-                String transactionAdjustments = objectMapper.readValue(
-                        json, String.class);
+                List<Object> transactionAdjustments = objectMapper.readValue(
+                        json, List.class);
                 assertTrue("Transactions as expected",
-                        transactionAdjustments.equalsIgnoreCase("[{0=10.20}, {3=-10.20}, {2=8.75}, {1=-8.75}, {3=-3.05}, {4=3.05}, {4=1.50}, {1=-1.50}]\n"));
+                        transactionAdjustments.equals(expected)); //equalsIgnoreCase("[{0=10.20}, {3=-10.20}, {2=8.75}, {1=-8.75}, {3=-3.05}, {4=3.05}, {4=1.50}, {1=-1.50}]"));
 
             } catch (IOException e) {
-                assertFalse(e.getMessage(), false);
                 e.printStackTrace();
+                assertFalse(e.getMessage(), true);
             }
         } catch (NotFoundException nfe) {
-            assertFalse("Invalid Not Found Exception", false);
+            assertFalse("Invalid Not Found Exception", true);
         }
     }
 }

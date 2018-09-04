@@ -138,7 +138,7 @@ public class Portfolios {
                     }
                 }
                 offsetMaxMinPortfolioDeltas(deltas, transactions);
-                return objectMapper.writeValueAsString(transactions + "\n");
+                return objectMapper.writeValueAsString(transactions) + "\n";
             } else {
                 throw new NotFoundException();
             }
